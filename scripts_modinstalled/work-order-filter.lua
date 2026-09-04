@@ -34,15 +34,9 @@ local GLOBAL_KEY = 'work-order-filter'
 local SCREEN_PREFIX = 'dwarfmode/Info/WORK_ORDERS'
 local BACKUP_NAME = 'work-order-filter-backup'
 
-local mi = df.global.game.main_interface
+local ui = reqscript('internal/work-orders-qol/ui')
 
--- Geometry of the vanilla Work Orders list (matches DFHack's orders.lua),
--- used only to keep the scroll position sane.
-local ORDER_HEIGHT = 3
-local TABS_WIDTH_THRESHOLD = 155
-local LIST_START_Y_ONE_TABS_ROW = 8
-local LIST_START_Y_TWO_TABS_ROWS = 10
-local BOTTOM_MARGIN = 9
+local mi = df.global.game.main_interface
 
 -- Filter state lives in the module so it survives the widget being rebuilt.
 --   hidden:   list of {id=, order=} taken out of the list, in original order
@@ -60,21 +54,8 @@ state = state or {
 -- --------------------------------------------------------------------------
 -- helpers
 
-local function get_orders()
-    return df.global.world.manager_orders.all
-end
-
-local function get_viewport_size()
-    local rect = gui.get_interface_rect()
-    local start_y = rect.width >= TABS_WIDTH_THRESHOLD
-        and LIST_START_Y_ONE_TABS_ROW or LIST_START_Y_TWO_TABS_ROWS
-    return math.max(1, math.floor((rect.height - start_y - BOTTOM_MARGIN) / ORDER_HEIGHT))
-end
-
-local function clamp_scroll(wanted)
-    local max_scroll = math.max(0, #get_orders() - get_viewport_size())
-    mi.info.work_orders.scroll_position_work_orders = math.max(0, math.min(wanted, max_scroll))
-end
+local get_orders = ui.get_orders
+local clamp_scroll = ui.clamp_scroll
 
 local function on_work_orders_screen()
     if not dfhack.isWorldLoaded() then return false end

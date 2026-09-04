@@ -74,11 +74,15 @@ run `gui/overlay` and drag it, or use `overlay position work-order-filter.filter
 **Shift+click** lets the game handle the click as normal, notices that the
 clicked order moved one step, and then finishes the move to the top or
 bottom. Because it reacts to what the game actually did rather than to pixel
-positions, it keeps working if the row layout shifts a little.
+positions, it keeps working if the row layout shifts a little. If what moved
+doesn't match the row that was clicked, it does nothing rather than guess.
 
-**The filter** has to temporarily take the non-matching orders out of the
-game's order list, because the game draws the rows straight from that list.
-To keep that safe:
+**The filter** works the same way DFHack's own `sort` plugin filters the
+other Info screens: it removes non-matching entries from the game's list
+vector, keeps them in memory, and puts them back afterwards. The difference is
+that the other Info screens draw from throwaway display lists the game
+rebuilds, while Work Orders draws straight from the real order list, so this
+mod adds guards that `sort` doesn't need:
 
 - the game is held **paused** while a filter is active, so nothing can save
   or process orders in the meantime;
@@ -93,6 +97,16 @@ When the list is restored, hidden orders keep their original positions and
 the orders you could see fill the remaining positions in the order you left
 them. Shift+click to top or bottom while filtered still means the top or
 bottom of the full list.
+
+## For developers
+
+Everything that depends on the vanilla screen layout (row height, where the
+list starts, the bottom margin) lives in one place,
+`scripts_modinstalled/internal/work-orders-qol/ui.lua`, and both overlays
+read it from there. If a Dwarf Fortress update changes the Work Orders
+layout, that is the only file to update. The numbers mirror the ones in
+DFHack's `hack/lua/plugins/orders.lua`, which is the first place to compare
+against.
 
 ## Troubleshooting
 
