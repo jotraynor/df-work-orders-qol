@@ -88,10 +88,24 @@ mod adds guards that `sort` doesn't need:
   or process orders in the meantime;
 - the filter is dropped automatically the moment you leave the Work Orders
   screen or anything requests a save;
-- every time a filter starts, all orders are backed up to
-  `dfhack-config/orders/work-order-filter-backup.json`. If anything ever goes
-  wrong, `orders import work-order-filter-backup` in the DFHack console brings
-  them back.
+- when you start typing a filter, all orders are backed up to
+  `dfhack-config/orders/work-order-filter-backup.json` (once per filter, not
+  on every keystroke). If anything ever goes wrong,
+  `orders import work-order-filter-backup` in the DFHack console brings them
+  back. If the backup itself cannot be written, a warning is printed to the
+  DFHack console so you know the safety net is missing.
+
+Two things to know:
+
+- **Clear the filter before you save.** Saving from the Escape menu is safe,
+  because opening that menu already drops the filter. DFHack's `quicksave`
+  command is different: it asks the game to save on the spot. The mod
+  notices the request and puts the orders back, but that happens a frame
+  later, so do not rely on it. Clear the box first.
+- **Opening another window drops the filter.** Clicking **New work order**,
+  or anything else that leaves the plain order list, brings the full list
+  back, exactly as leaving the screen does. Nothing is lost; just type the
+  filter again when you return.
 
 When the list is restored, hidden orders keep their original positions and
 the orders you could see fill the remaining positions in the order you left

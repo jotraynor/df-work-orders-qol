@@ -16,8 +16,10 @@ While a filter is active the non-matching orders are temporarily taken out of
 the game's order list, so the game is kept paused and the filter is dropped
 automatically the moment you leave the Work Orders screen. A backup of all
 orders is also exported to ``dfhack-config/orders/work-order-filter-backup.json``
-whenever a filter starts; ``orders import work-order-filter-backup`` restores
-it if anything ever goes wrong.
+when you start typing a filter (once per filter, not per keystroke);
+``orders import work-order-filter-backup`` restores it if anything ever goes
+wrong. If the backup cannot be written a warning is printed to the DFHack
+console. Clear the filter before saving with ``quicksave``.
 
 Toggle the overlay with ``gui/control-panel`` (Overlays tab) or::
 
@@ -158,6 +160,28 @@ function pin_bottom(id)
     table.insert(state.pins_bottom, id)
 end
 
+-- Export a recoverable copy of every order. Called once when a filter session
+-- starts (not on every keystroke) while the list is still complete. Failure
+-- is reported on the console rather than swallowed, since the README promises
+-- this safety net exists.
+local function backup_orders()
+    local ok, output, rc = pcall(dfhack.run_command_silent, 'orders', 'export', BACKUP_NAME)
+    if ok and rc == CR_OK then return true end
+    local reason
+    if ok then
+        -- on failure the plugin appends its whole help text; keep the first line
+        local first_line = tostring(output or ''):match('^%s*([^\r\n]+)') or ''
+        reason = ('orders export returned %s%s'):format(tostring(rc),
+            first_line ~= '' and (': ' .. first_line) or '')
+    else
+        reason = tostring(output)
+    end
+    dfhack.printerr(('%s: could not back up work orders to dfhack-config/orders/%s.json (%s).'
+        .. ' The filter still works, but there is no backup for this session.')
+        :format(GLOBAL_KEY, BACKUP_NAME, reason))
+    return false
+end
+
 -- Take every non-matching order out of the list. Must not be active already.
 local function apply_filter(text)
     local tokens = get_tokens(text)
@@ -171,9 +195,6 @@ local function apply_filter(text)
             hidden[#hidden+1] = {id=o.id, order=o}
         end
     end
-
-    -- keep a recoverable copy of everything before touching the list
-    pcall(dfhack.run_command_silent, 'orders', 'export', BACKUP_NAME)
 
     -- commit the state before mutating so a restore is always possible
     state.orig_ids = orig_ids
@@ -307,9 +328,14 @@ local function ensure_watchdog()
     state.watchdog = dfhack.timeout(1, 'frames', watchdog)
 end
 
+-- Every keystroke restores the full list and re-applies the new text, so the
+-- backup only needs to happen when a filter session begins (the box was empty
+-- a moment ago), not once per character typed.
 function set_filter(text)
-    if is_active() then restore() end
+    local was_active = is_active()
+    if was_active then restore() end
     if text and text ~= '' then
+        if not was_active then backup_orders() end
         apply_filter(text)
         ensure_watchdog()
     end
