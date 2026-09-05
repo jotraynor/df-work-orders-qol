@@ -47,7 +47,18 @@ To uninstall, delete the folder. The mod never changes your save files.
 
 Hold **Shift** and click an order's **up arrow**. The order jumps to the top
 of the list (highest priority). **Shift** + the **down arrow** sends it to the
-bottom. A normal click still moves the order one step as usual.
+bottom. A normal click still moves the order one step as usual. If you were
+in the middle of typing a number into a quantity box, the shift+click cancels
+the typing and moves the order.
+
+**If your moves seem to undo themselves**, check whether DFHack's
+`orders-sort` automation is on (`gui/control-panel`, Automation tab). It
+re-sorts the whole list once a game day: orders with an assigned workshop
+first, then one-time orders, then yearly down to daily. Inside one of those
+groups your ordering is kept, but a daily order you sent to the top will be
+pushed back below the one-time orders at the next sort. The mod prints a
+warning in the DFHack console the first time you shift+click in a world where
+that automation is enabled. Turn it off if you want manual ordering to stick.
 
 ### Filter box
 

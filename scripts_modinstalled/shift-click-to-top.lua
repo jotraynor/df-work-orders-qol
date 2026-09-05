@@ -9,6 +9,12 @@ Overlay for the Work Orders screen. Hold Shift and click the up arrow on a
 work order to move that order straight to the top of the list (highest
 priority). Shift+clicking the down arrow moves the order to the bottom.
 
+If DFHack's ``orders-sort`` automation is enabled (``gui/control-panel``,
+Automation tab) it re-sorts the whole list once a game day by workshop and
+frequency, which undoes any move that crossed one of those groups. The
+overlay prints a warning the first time you shift-click in a world where that
+automation is on.
+
 The overlay is enabled automatically. To toggle it, use
 ``gui/control-panel`` (Overlays tab) or::
 
@@ -20,10 +26,52 @@ The overlay is enabled automatically. To toggle it, use
 local overlay = require('plugins.overlay')
 local ui = reqscript('internal/work-orders-qol/ui')
 
+local GLOBAL_KEY = 'shift-click-to-top'
+
 local mi = df.global.game.main_interface
 
 -- How many frames to wait for vanilla to react to the click before giving up.
 local PENDING_FRAMES = 5
+
+-- Clicking a quantity box puts vanilla into typing mode, and it stays there
+-- until Enter or Escape even if you click elsewhere. This overlay used to
+-- refuse to act in that state, which made shift-click look dead until the
+-- screen was reopened. Cancel the typing the same way DFHack's own
+-- orders.quantityrightclick overlay does, then let the click through.
+local function cancel_number_entry()
+    local wo = mi.info.work_orders
+    if wo.entering_number then wo.entering_number = false end
+    if wo.b_entering_number then wo.b_entering_number = false end
+end
+
+-- DFHack's orders-sort automation (gui/control-panel, Automation tab) runs
+-- `orders sort` once a game day. That is a stable sort by workshop
+-- assignment and frequency, so it silently undoes any shift-click move that
+-- crossed one of those groups. Players read that as "the mod forgot my
+-- change", so say so once per world, the first time a move succeeds.
+local warned_about_sort = false
+
+local function orders_sort_enabled()
+    local ok, output = pcall(dfhack.run_command_silent, 'repeat', '-list')
+    return ok and type(output) == 'string' and output:find('orders%-sort', 1, false) ~= nil
+end
+
+local function warn_about_orders_sort()
+    if warned_about_sort then return end
+    warned_about_sort = true
+    if not orders_sort_enabled() then return end
+    print(('%s: DFHack\'s orders-sort automation is enabled. Once a game day it'
+        .. ' re-sorts the list by workshop and frequency, which undoes Shift+click'
+        .. ' moves that crossed those groups. Turn it off in gui/control-panel'
+        .. ' (Automation tab) if you want manual ordering to stick.'):format(GLOBAL_KEY))
+    pcall(dfhack.gui.showAnnouncement,
+        'Shift+click: orders-sort automation re-sorts this list daily (see DFHack console)',
+        COLOR_YELLOW)
+end
+
+dfhack.onStateChange[GLOBAL_KEY] = function(sc)
+    if sc == SC_WORLD_LOADED then warned_about_sort = false end
+end
 
 local function snapshot_ids()
     local orders = ui.get_orders()
@@ -92,13 +140,12 @@ end
 function ShiftClickArrowsOverlay:onInput(keys)
     if not keys._MOUSE_L then return end
     if mi.job_details.open then return end
-    if mi.info.work_orders.entering_number or mi.info.work_orders.b_entering_number then
-        return
-    end
     if not dfhack.internal.getModifiers().shift then return end
 
     local idx = ui.get_order_under_mouse()
     if not idx then return end
+
+    cancel_number_entry()
 
     -- Remember the list, then let vanilla handle the click. If vanilla moves
     -- the clicked order one step, we finish the job in check_pending().
@@ -129,11 +176,13 @@ function ShiftClickArrowsOverlay:check_pending()
             local id = orders[k].id
             move_order(k, 0)
             notify_filter('pin_top', id)
+            warn_about_orders_sort()
         elseif p.clicked == k then
             -- clicked order moved down: down arrow -> send to bottom
             local id = orders[k + 1].id
             move_order(k + 1, '#')
             notify_filter('pin_bottom', id)
+            warn_about_orders_sort()
         end
         return
     end
