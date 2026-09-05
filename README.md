@@ -18,12 +18,22 @@ free and installs from Steam in one click.
 2. **Download the mod.** Go to the
    [Releases page](../../releases/latest) and download the `.zip` file.
 3. **Unzip it.** You get a folder called `DFShiftClickToTop`.
-4. **Put that folder in your game's `mods` folder.** To find it: in Steam,
-   right-click Dwarf Fortress, then Manage, then Browse local files. If there
-   is no `mods` folder there yet, create one. You should end up with:
+4. **Put that folder in your game's `mods` folder.** Since Dwarf Fortress
+   52.01 that folder is *not* next to the game's `.exe`. It lives with your
+   saves, in your user profile:
 
-       Dwarf Fortress\mods\DFShiftClickToTop\info.txt
-       Dwarf Fortress\mods\DFShiftClickToTop\scripts_modinstalled\...
+   - **Windows:** press `Win+R`, paste
+     `%APPDATA%\Bay 12 Games\Dwarf Fortress\mods` and press Enter.
+   - **Linux / Steam Deck:** `~/.local/share/Bay 12 Games/Dwarf Fortress/mods`
+
+   You should end up with:
+
+       ...\Bay 12 Games\Dwarf Fortress\mods\DFShiftClickToTop\info.txt
+       ...\Bay 12 Games\Dwarf Fortress\mods\DFShiftClickToTop\scripts_modinstalled\...
+
+   If you are still on Dwarf Fortress 50 or 51, use the `mods` folder inside
+   the game's install folder instead (in Steam: right-click Dwarf Fortress,
+   Manage, Browse local files).
 
 5. **Start the game and load a fort.** Open the Work Orders tab and you are
    done. You do not need to add the mod to your world's mod list; DFHack finds
@@ -130,9 +140,11 @@ and run:
     overlay list work
 
 You should see `shift-click-to-top.arrows` and `work-order-filter.filter` both
-marked `[enabled]`. If they are missing, check the folder layout in the
-install steps above. If you see red error text, please open an issue and paste
-it.
+marked `[enabled]`. If they are missing, the mod folder is almost certainly in
+the wrong place: on Dwarf Fortress 52.01 and later the game only reads the
+`mods` folder under `%APPDATA%\Bay 12 Games\Dwarf Fortress`, not the one next
+to the game's `.exe`. Move the folder there and reload your fort. If you see
+red error text, please open an issue and paste it.
 
 ## License
 
